@@ -29,6 +29,7 @@ import {
 import { AppLogsDialog } from "@/modules/apps/components/app-logs-dialog";
 import { AppStore } from "@/modules/apps/components/app-store";
 import { AppConfiguratorPanel } from "@/modules/apps/components/configurator/app-configurator-panel";
+import { ContainerSettingsPanel } from "@/modules/apps/components/configurator/container-settings-panel";
 import {
   StoreActionsProvider,
   useSharedStoreActions,
@@ -898,8 +899,8 @@ function DesktopShellInner() {
               setAppSettingsTarget(null);
             }}
             onMinimize={() => minimizeWindow("app-settings")}
-            defaultWidth={920}
-            defaultHeight={700}
+            defaultWidth={appSettingsTarget.unmanaged ? 560 : 920}
+            defaultHeight={appSettingsTarget.unmanaged ? 460 : 700}
             zIndex={getWindowZ("app-settings")}
             dockPosition={appearance.dockPosition}
             onFocus={() => setFocusedWindow("app-settings")}
@@ -907,15 +908,26 @@ function DesktopShellInner() {
             isMinimized={minimizedWindows.includes("app-settings")}
             animationsEnabled={appearance.animationsEnabled}
           >
-            <AppConfiguratorPanel
-              context="installed_edit"
-              target={appSettingsTarget}
-              actions={{ saveAppSettings: shellStoreActions.saveAppSettings }}
-              onClose={() => {
-                closeWindow("app-settings");
-                setAppSettingsTarget(null);
-              }}
-            />
+            {appSettingsTarget.unmanaged ? (
+              <ContainerSettingsPanel
+                key={appSettingsTarget.containerName}
+                target={appSettingsTarget}
+                onClose={() => {
+                  closeWindow("app-settings");
+                  setAppSettingsTarget(null);
+                }}
+              />
+            ) : (
+              <AppConfiguratorPanel
+                context="installed_edit"
+                target={appSettingsTarget}
+                actions={{ saveAppSettings: shellStoreActions.saveAppSettings }}
+                onClose={() => {
+                  closeWindow("app-settings");
+                  setAppSettingsTarget(null);
+                }}
+              />
+            )}
           </Window>
         )}
 

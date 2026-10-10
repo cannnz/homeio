@@ -117,6 +117,18 @@ export const customStoreApps = pgTable(
   (table) => [index("custom_store_apps_updated_at_idx").on(table.updatedAt.desc())],
 );
 
+/**
+ * Name, icon and link an operator set for a container Homeio did not deploy.
+ * Keyed by container name: the id changes every time the container is recreated.
+ */
+export const containerCustomizations = pgTable("container_customizations", {
+  containerName: text("container_name").primaryKey(),
+  displayName: text("display_name"),
+  iconUrl: text("icon_url"),
+  dashboardUrl: text("dashboard_url"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const filesNetworkShares = pgTable(
   "files_network_shares",
   {

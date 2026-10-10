@@ -55,4 +55,17 @@ export type UnmanagedContainer = {
   /** What the container is doing, read from state and status line. */
   condition: AppConditionSummary;
   composeProject: string | null;
+  /** Name the operator gave it in Homeio; the Docker name when null. */
+  displayName: string | null;
+  /** Icon the operator picked; the default container icon when null. */
+  iconUrl: string | null;
+  /** Link "Open Dashboard" goes to; disabled when null. */
+  dashboardUrl: string | null;
+};
+
+/** What an operator can change about a container Homeio did not deploy. */
+export type ContainerCustomization = {
+  displayName: string | null;
+  iconUrl: string | null;
+  dashboardUrl: string | null;
 };

@@ -1,29 +1,19 @@
 import "server-only";
 
 import { listContainers } from "@/lib/server/modules/docker/stats";
+import { listContainerCustomizations } from "@/lib/server/modules/docker/container-customizations";
 import { listInstalledStacksFromDb } from "@/lib/server/modules/apps/stacks-repository";
 import { logServerAction } from "@/lib/server/logging/logger";
 import { homeioComponentOf } from "@/lib/server/modules/integrations/cloudflared-connectors";
 import {
   parseDockerStatusLine,
   summarizeContainers,
-  type AppConditionSummary,
 } from "@/lib/shared/app-condition";
+import type { UnmanagedContainer } from "@/lib/shared/contracts/docker";
 
 const COMPOSE_PROJECT_LABEL = "com.docker.compose.project";
 
-export type UnmanagedContainer = {
-  id: string;
-  name: string;
-  image: string;
-  /** Docker's own state: running, exited, paused, restarting, ... */
-  state: string;
-  /** Docker's human status line, e.g. "Up 3 days". */
-  status: string;
-  /** What the container is doing, read from state and status line. */
-  condition: AppConditionSummary;
-  composeProject: string | null;
-};
+export type { UnmanagedContainer };
 
 function toContainerName(names: string[] | undefined, id: string) {
   const first = names?.[0]?.trim() ?? "";
@@ -42,7 +32,7 @@ function toContainerName(names: string[] | undefined, id: string) {
  * Cloudflare connector, are neither: they live in Settings.
  */
 export async function listUnmanagedContainers(): Promise<UnmanagedContainer[]> {
-  const [containers, stacks] = await Promise.all([
+  const [containers, stacks, customizations] = await Promise.all([
     listContainers(),
     listInstalledStacksFromDb().catch((error) => {
       logServerAction({
@@ -55,6 +45,7 @@ export async function listUnmanagedContainers(): Promise<UnmanagedContainer[]> {
       });
       return [];
     }),
+    listContainerCustomizations(),
   ]);
 
   const managedProjects = new Set(stacks.map((stack) => stack.stackName));
@@ -65,16 +56,23 @@ export async function listUnmanagedContainers(): Promise<UnmanagedContainer[]> {
       const project = container.Labels?.[COMPOSE_PROJECT_LABEL];
       return !project || !managedProjects.has(project);
     })
-    .map((container) => ({
-      id: container.Id,
-      name: toContainerName(container.Names, container.Id),
-      image: container.Image ?? "",
-      state: container.State ?? "unknown",
-      status: container.Status ?? "",
-      condition: summarizeContainers([
-        { state: container.State ?? "unknown", ...parseDockerStatusLine(container.Status ?? "") },
-      ]),
-      composeProject: container.Labels?.[COMPOSE_PROJECT_LABEL] ?? null,
-    }))
+    .map((container) => {
+      const name = toContainerName(container.Names, container.Id);
+      const customization = customizations.get(name);
+      return {
+        id: container.Id,
+        name,
+        image: container.Image ?? "",
+        state: container.State ?? "unknown",
+        status: container.Status ?? "",
+        condition: summarizeContainers([
+          { state: container.State ?? "unknown", ...parseDockerStatusLine(container.Status ?? "") },
+        ]),
+        composeProject: container.Labels?.[COMPOSE_PROJECT_LABEL] ?? null,
+        displayName: customization?.displayName ?? null,
+        iconUrl: customization?.iconUrl ?? null,
+        dashboardUrl: customization?.dashboardUrl ?? null,
+      };
+    })
     .sort((left, right) => left.name.localeCompare(right.name));
 }

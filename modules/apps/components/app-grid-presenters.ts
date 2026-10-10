@@ -68,7 +68,11 @@ export type AppActionTarget = {
   appName: string;
   dashboardUrl: string;
   containerName: string;
+  /** A container Homeio did not deploy: its settings are name, icon and link only. */
+  unmanaged?: true;
 };
+
+export const UNMANAGED_APP_ID_PREFIX = "container:";
 
 export type AppOperationStateLike = {
   appId: string;
@@ -173,6 +177,9 @@ export function pickVisual(appName: string, appId: string) {
 export function resolveAppActionTarget(app: AppItem): AppActionTarget {
   const fallbackContainerName = app.containerName?.trim() ?? "";
   const customUrl = app.webUiUrl?.trim() ?? "";
+  const kind = app.id.startsWith(UNMANAGED_APP_ID_PREFIX)
+    ? { unmanaged: true as const }
+    : {};
 
   // An operator-set link wins: the automatic one is built from the browser's
   // own location, which is wrong behind a reverse proxy or tunnel.
@@ -182,6 +189,7 @@ export function resolveAppActionTarget(app: AppItem): AppActionTarget {
       appName: app.name,
       dashboardUrl: customUrl,
       containerName: fallbackContainerName,
+      ...kind,
     };
   }
 
@@ -196,6 +204,7 @@ export function resolveAppActionTarget(app: AppItem): AppActionTarget {
       appName: app.name,
       dashboardUrl: `${protocol}//${hostname}:${app.webUiPort}`,
       containerName: fallbackContainerName,
+      ...kind,
     };
   }
 
@@ -204,6 +213,7 @@ export function resolveAppActionTarget(app: AppItem): AppActionTarget {
     appName: app.name,
     dashboardUrl: "",
     containerName: fallbackContainerName,
+    ...kind,
   };
 }
 
@@ -349,17 +359,17 @@ export function buildUnmanagedAppItems(
     const visual = pickVisual(container.name, container.id);
 
     return {
-      id: `container:${container.id}`,
-      name: container.name,
+      id: `${UNMANAGED_APP_ID_PREFIX}${container.id}`,
+      name: container.displayName ?? container.name,
       icon: visual.icon,
-      logoUrl: null,
+      logoUrl: container.iconUrl,
       color: visual.color,
       bgColor: visual.bgColor,
       status: "unmanaged" as const,
       condition: container.condition,
       category: "Containers",
       webUiPort: null,
-      webUiUrl: null,
+      webUiUrl: container.dashboardUrl,
       containerName: container.name,
       updateAvailable: false,
     } satisfies AppItem;

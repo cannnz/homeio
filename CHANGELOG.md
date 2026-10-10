@@ -8,6 +8,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- **Name, icon and link for containers Homeio did not deploy (#55).** App Settings in their right-click menu now opens a small panel to give them a display name, an icon URL and the URL **Open Dashboard** and **Copy URL** go to. Empty fields fall back to the Docker name and the default icon. The settings are kept by container name, so they survive the container being recreated.
+
 ---
 
 ## [1.10.0] - 2026-10-01
