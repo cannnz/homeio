@@ -2,13 +2,15 @@ import type { Server } from "http";
 import type { IncomingMessage } from "http";
 import type { Duplex } from "stream";
 import { WebSocketServer, WebSocket } from "ws";
-import pty from "@lydell/node-pty";
+import * as pty from "@lydell/node-pty";
 import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
 import os from "node:os";
 import { parse } from "node:url";
 import { serverEnv } from "@/lib/server/env";
 import { getAuthCookieName } from "@/lib/server/modules/auth/cookies";
 import { authenticateSession } from "@/lib/server/modules/auth/service";
+import { markInteractiveTerminalAvailable } from "@/lib/server/modules/terminal/availability";
 
 interface ResizeMessage {
   type: "resize";
@@ -43,6 +45,9 @@ type TerminalUpgradeRequest = IncomingMessage & {
   terminalSession?: AuthenticatedSession | null;
 };
 
+/** Docker's own rule for container names; also keeps `-flags` out of `docker exec`. */
+const CONTAINER_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,254}$/;
+
 const activeTerminalSessionIdsByUser = new Map<string, Set<string>>();
 
 /**
@@ -67,14 +72,84 @@ const PTY_SAFE_ENV_KEYS = new Set([
   "DBUS_SESSION_BUS_ADDRESS",
 ]);
 
-/** Build a minimal, safe environment for PTY child processes. */
-function buildPtyEnv(): Record<string, string> {
-  const env: Record<string, string> = { TERM: "xterm-256color" };
+const DEFAULT_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin";
+
+function currentUser() {
+  try {
+    return os.userInfo();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The shell a login on this machine would get: the account's own shell, else
+ * bash, else sh (the Docker image is Alpine, where bash may be missing).
+ */
+export function resolveLoginShell(): string {
+  if (os.platform() === "win32") return "powershell.exe";
+  const candidates = [currentUser()?.shell, process.env.SHELL, "/bin/bash", "/bin/sh"];
+  for (const candidate of candidates) {
+    if (candidate && candidate.startsWith("/") && existsSync(candidate)) {
+      return candidate;
+    }
+  }
+  return "sh";
+}
+
+/**
+ * Build a minimal, safe environment for PTY child processes. systemd starts
+ * Homeio without HOME, USER or a full PATH, so fill those from the account
+ * the server runs as -- a login shell needs them to find its profile.
+ */
+export function buildPtyEnv(shell = resolveLoginShell()): Record<string, string> {
+  const env: Record<string, string> = {
+    TERM: "xterm-256color",
+    COLORTERM: "truecolor",
+  };
   for (const key of PTY_SAFE_ENV_KEYS) {
     const val = process.env[key];
     if (val !== undefined) env[key] = val;
   }
+
+  const user = currentUser();
+  env.HOME ??= user?.homedir || os.homedir();
+  env.USER ??= user?.username ?? "root";
+  env.LOGNAME ??= env.USER;
+  env.SHELL ??= shell;
+  env.PATH ??= DEFAULT_PATH;
+  env.LANG ??= "C.UTF-8";
   return env;
+}
+
+/**
+ * Browsers send cookies on a WebSocket handshake from any page on the same
+ * site -- including another app on this server's IP at a different port. A
+ * root shell must only open for Homeio's own pages, so the Origin has to name
+ * the host the request came in on. Clients that send no Origin are not
+ * browsers and still need the session cookie.
+ */
+export function isSameOriginUpgrade(request: IncomingMessage): boolean {
+  const origin = request.headers.origin;
+  if (!origin) return true;
+
+  let originHost: string;
+  try {
+    originHost = new URL(origin).host.toLowerCase();
+  } catch {
+    return false;
+  }
+
+  const forwardedHost = request.headers["x-forwarded-host"];
+  const hosts = [
+    request.headers.host,
+    ...(Array.isArray(forwardedHost) ? forwardedHost : [forwardedHost]),
+  ]
+    .flatMap((value) => (value ?? "").split(","))
+    .map((value) => value.trim().toLowerCase())
+    .filter((value) => value.length > 0);
+
+  return hosts.includes(originHost);
 }
 
 function parseCookies(headerValue: string | undefined) {
@@ -136,6 +211,11 @@ function unregisterActiveSession(userId: string, sessionId: string) {
   }
 }
 
+function clampDimension(value: unknown, fallback: number, max: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(1, Math.floor(value)));
+}
+
 function isControlMessage(value: unknown): value is TerminalMessage {
   if (!value || typeof value !== "object") return false;
   const record = value as { type?: string };
@@ -151,6 +231,7 @@ function isControlMessage(value: unknown): value is TerminalMessage {
  */
 export function initializeWebSocketServer(server: Server): void {
   const wss = new WebSocketServer({ noServer: true });
+  markInteractiveTerminalAvailable();
 
   wss.on("connection", (ws: WebSocket, request: TerminalUpgradeRequest) => {
     let ptyProcess: pty.IPty | null = null;
@@ -159,10 +240,14 @@ export function initializeWebSocketServer(server: Server): void {
     let idleTimer: NodeJS.Timeout | null = null;
     let lifetimeTimer: NodeJS.Timeout | null = null;
     const terminalSessionId = randomUUID();
+    let cols = 80;
+    let rows = 24;
     const authSession = request.terminalSession ?? null;
 
-    const shell = os.platform() === "win32" ? "powershell.exe" : "bash";
-    const cwd = process.env.HOME || process.cwd();
+    const shell = resolveLoginShell();
+    const shellArgs = os.platform() === "win32" ? [] : ["-l"];
+    const ptyEnv = buildPtyEnv(shell);
+    const cwd = existsSync(ptyEnv.HOME) ? ptyEnv.HOME : "/";
 
     if (serverEnv.TERMINAL_WS_REQUIRE_AUTH && !authSession) {
       sendWsErrorAndClose(ws, 4401, "unauthorized", "Unauthorized");
@@ -250,12 +335,12 @@ export function initializeWebSocketServer(server: Server): void {
     // Create PTY for host shell
     const createHostPty = (): void => {
       try {
-        const nextPty = pty.spawn(shell, [], {
+        const nextPty = pty.spawn(shell, shellArgs, {
           name: "xterm-256color",
-          cols: 80,
-          rows: 24,
+          cols,
+          rows,
           cwd,
-          env: buildPtyEnv(),
+          env: ptyEnv,
         });
 
         attachPty(nextPty, () => {
@@ -274,10 +359,10 @@ export function initializeWebSocketServer(server: Server): void {
       try {
         const nextPty = pty.spawn("docker", ["exec", "-it", container, shellBin], {
           name: "xterm-256color",
-          cols: 80,
-          rows: 24,
+          cols,
+          rows,
           cwd,
-          env: buildPtyEnv(),
+          env: ptyEnv,
         });
 
         attachPty(nextPty, (exitCode: { exitCode: number; signal?: number }) => {
@@ -320,8 +405,10 @@ export function initializeWebSocketServer(server: Server): void {
           return;
         }
 
-        if (parsed.type === "resize" && ptyProcess) {
-          ptyProcess.resize(parsed.cols || 80, parsed.rows || 24);
+        if (parsed.type === "resize") {
+          cols = clampDimension(parsed.cols, cols, 500);
+          rows = clampDimension(parsed.rows, rows, 200);
+          ptyProcess?.resize(cols, rows);
           return;
         }
 
@@ -340,6 +427,12 @@ export function initializeWebSocketServer(server: Server): void {
         }
 
         if (parsed.type === "attach" && parsed.target) {
+          if (!CONTAINER_NAME_PATTERN.test(parsed.target)) {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send("\r\n\x1b[1;31mInvalid container name\x1b[0m\r\n");
+            }
+            return;
+          }
           // Switch to docker container
           killPty();
           targetContainer = parsed.target;
@@ -372,6 +465,11 @@ export function initializeWebSocketServer(server: Server): void {
 
     if (serverEnv.DEMO_MODE) {
       closeUpgradeSocket(socket, 403, "Terminal is disabled in demo mode");
+      return;
+    }
+
+    if (!isSameOriginUpgrade(request)) {
+      closeUpgradeSocket(socket, 403, "Forbidden");
       return;
     }
 

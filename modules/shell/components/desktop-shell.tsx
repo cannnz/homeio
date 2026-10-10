@@ -54,7 +54,7 @@ import { Dock } from "./dock";
 import { LockScreen } from "./lock-screen";
 import { RebootOverlay } from "./reboot-overlay";
 import { SessionLoadingScreen } from "./session-loading-screen";
-import { Terminal } from "./terminal";
+import { Terminal, type TerminalAttachRequest } from "./terminal";
 import { UpdateRecoveryScreen } from "./update-recovery-screen";
 import { Window } from "./window";
 
@@ -110,18 +110,13 @@ function DesktopShellInner() {
     appId?: string;
   } | null>(null);
   const [recentActions, setRecentActions] = useState<RecentCommandAction[]>([]);
-  const [terminalCommandRequest, setTerminalCommandRequest] = useState<{
-    id: number;
-    command: string;
-  } | null>(null);
-  const [terminalMode, setTerminalMode] = useState<"interactive" | "logs">(
-    "interactive",
-  );
+  const [terminalAttachRequest, setTerminalAttachRequest] =
+    useState<TerminalAttachRequest>(null);
   const [appSettingsTarget, setAppSettingsTarget] =
     useState<AppActionTarget | null>(null);
   const [logsTarget, setLogsTarget] = useState<AppActionTarget | null>(null);
   const shellStoreActions = useSharedStoreActions();
-  const terminalCommandIdRef = useRef(0);
+  const terminalAttachIdRef = useRef(0);
   const [displayWallpaper, setDisplayWallpaper] = useState<string | null>(null);
   const [nextWallpaper, setNextWallpaper] = useState<string | null>(null);
   const [isWallpaperFading, setIsWallpaperFading] = useState(false);
@@ -469,26 +464,12 @@ function DesktopShellInner() {
     return focusedWindow === id ? 110 : 100;
   }
 
-  const requestTerminalCommand = useCallback(
-    (command: string) => {
-      terminalCommandIdRef.current += 1;
-      setTerminalMode("interactive");
-      setTerminalCommandRequest({
-        id: terminalCommandIdRef.current,
-        command,
-      });
-      openWindow("terminal");
-    },
-    [openWindow],
-  );
-
-  const requestLogsCommand = useCallback(
-    (command: string) => {
-      terminalCommandIdRef.current += 1;
-      setTerminalMode("logs");
-      setTerminalCommandRequest({
-        id: terminalCommandIdRef.current,
-        command,
+  const openContainerTerminal = useCallback(
+    (container: string) => {
+      terminalAttachIdRef.current += 1;
+      setTerminalAttachRequest({
+        id: terminalAttachIdRef.current,
+        container,
       });
       openWindow("terminal");
     },
@@ -747,9 +728,7 @@ function DesktopShellInner() {
             animationsEnabled={appearance.animationsEnabled}
             onViewLogs={(target) => setLogsTarget(target)}
             onOpenTerminal={({ containerName }) =>
-              requestTerminalCommand(
-                `docker exec ${containerName} /bin/sh -c "pwd && ls"`,
-              )
+              openContainerTerminal(containerName)
             }
             onOpenSettings={(target) => {
               setAppSettingsTarget(target);
@@ -933,9 +912,12 @@ function DesktopShellInner() {
 
         {openWindows.includes("terminal") && (
           <Window
-            title={terminalMode === "logs" ? "Container Logs" : "Terminal"}
+            title="Terminal"
             icon={<TerminalSquare className="size-4 text-emerald-400" />}
-            onClose={() => closeWindow("terminal")}
+            onClose={() => {
+              closeWindow("terminal");
+              setTerminalAttachRequest(null);
+            }}
             onMinimize={() => minimizeWindow("terminal")}
             defaultWidth={980}
             defaultHeight={620}
@@ -946,10 +928,7 @@ function DesktopShellInner() {
             isMinimized={minimizedWindows.includes("terminal")}
             animationsEnabled={appearance.animationsEnabled}
           >
-            <Terminal
-              commandRequest={terminalCommandRequest}
-              readOnly={terminalMode === "logs"}
-            />
+            <Terminal attachRequest={terminalAttachRequest} />
           </Window>
         )}
 

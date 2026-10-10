@@ -11,6 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - **Name, icon and link for containers Homeio did not deploy (#55).** App Settings in their right-click menu now opens a small panel to give them a display name, an icon URL and the URL **Open Dashboard** and **Copy URL** go to. Empty fields fall back to the Docker name and the default icon. The settings are kept by container name, so they survive the container being recreated.
+- **The Terminal is a real shell (#58).** It now opens a full login shell on the server over the existing `/api/terminal` WebSocket, the same one an SSH login would give: on a direct install that is root, so `git`, `apt`, editors, `top` and anything else that runs in a terminal works, with colours, resizing, links and scrollback. Copy and paste are **Ctrl+Shift+C** / **Ctrl+Shift+V**, as in Ubuntu's terminal. **Open in Terminal** on an app drops into a shell inside its container. When the shell exits, Enter starts a new one. Where the shell cannot run (the Docker image, demo mode) the window falls back to the previous command terminal and its allow list.
+
+### Fixed
+
+- **The terminal WebSocket could never open a shell.** It loaded node-pty through a default import the package does not have, so every session failed with `Cannot read properties of undefined (reading 'spawn')`.
+
+### Security
+
+- **The terminal WebSocket only accepts Homeio's own pages.** Browsers send the session cookie on a WebSocket handshake from any page on the same site, including another app on the server's IP at a different port; the handshake is now refused unless its Origin matches the host it came in on.
 
 ---
 
