@@ -116,7 +116,7 @@ export function buildPtyEnv(shell = resolveLoginShell()): Record<string, string>
   env.HOME ??= user?.homedir || os.homedir();
   env.USER ??= user?.username ?? "root";
   env.LOGNAME ??= env.USER;
-  env.SHELL ??= shell;
+  env.SHELL = shell;
   env.PATH ??= DEFAULT_PATH;
   env.LANG ??= "C.UTF-8";
   return env;
