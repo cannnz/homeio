@@ -38,7 +38,7 @@ A self-hosted server manager with a desktop-style UI. Alternative to CasaOS, Umb
 - Notification system: real-time alerts for app events, container crashes, disk warnings, and task failures
 - USB drive support: auto-detect, mount, browse, and eject removable drives from the file manager
 - Local folder sharing over Samba and SMB network mount/unmount
-- Terminal with command allowlist (ls, cat, docker, df, ping, and more)
+- Full terminal: a real login shell on the server (root on a direct install), or inside any app's container
 - Docker container stats in real time, including containers Homeio did not deploy
 - Network manager: WiFi and Ethernet via NetworkManager
 - Weather widget with location-based conditions

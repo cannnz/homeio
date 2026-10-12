@@ -29,6 +29,7 @@ import {
 import { AppLogsDialog } from "@/modules/apps/components/app-logs-dialog";
 import { AppStore } from "@/modules/apps/components/app-store";
 import { AppConfiguratorPanel } from "@/modules/apps/components/configurator/app-configurator-panel";
+import { ContainerSettingsPanel } from "@/modules/apps/components/configurator/container-settings-panel";
 import {
   StoreActionsProvider,
   useSharedStoreActions,
@@ -53,7 +54,7 @@ import { Dock } from "./dock";
 import { LockScreen } from "./lock-screen";
 import { RebootOverlay } from "./reboot-overlay";
 import { SessionLoadingScreen } from "./session-loading-screen";
-import { Terminal } from "./terminal";
+import { Terminal, type TerminalAttachRequest } from "./terminal";
 import { UpdateRecoveryScreen } from "./update-recovery-screen";
 import { Window } from "./window";
 
@@ -109,18 +110,13 @@ function DesktopShellInner() {
     appId?: string;
   } | null>(null);
   const [recentActions, setRecentActions] = useState<RecentCommandAction[]>([]);
-  const [terminalCommandRequest, setTerminalCommandRequest] = useState<{
-    id: number;
-    command: string;
-  } | null>(null);
-  const [terminalMode, setTerminalMode] = useState<"interactive" | "logs">(
-    "interactive",
-  );
+  const [terminalAttachRequest, setTerminalAttachRequest] =
+    useState<TerminalAttachRequest>(null);
   const [appSettingsTarget, setAppSettingsTarget] =
     useState<AppActionTarget | null>(null);
   const [logsTarget, setLogsTarget] = useState<AppActionTarget | null>(null);
   const shellStoreActions = useSharedStoreActions();
-  const terminalCommandIdRef = useRef(0);
+  const terminalAttachIdRef = useRef(0);
   const [displayWallpaper, setDisplayWallpaper] = useState<string | null>(null);
   const [nextWallpaper, setNextWallpaper] = useState<string | null>(null);
   const [isWallpaperFading, setIsWallpaperFading] = useState(false);
@@ -468,26 +464,12 @@ function DesktopShellInner() {
     return focusedWindow === id ? 110 : 100;
   }
 
-  const requestTerminalCommand = useCallback(
-    (command: string) => {
-      terminalCommandIdRef.current += 1;
-      setTerminalMode("interactive");
-      setTerminalCommandRequest({
-        id: terminalCommandIdRef.current,
-        command,
-      });
-      openWindow("terminal");
-    },
-    [openWindow],
-  );
-
-  const requestLogsCommand = useCallback(
-    (command: string) => {
-      terminalCommandIdRef.current += 1;
-      setTerminalMode("logs");
-      setTerminalCommandRequest({
-        id: terminalCommandIdRef.current,
-        command,
+  const openContainerTerminal = useCallback(
+    (container: string) => {
+      terminalAttachIdRef.current += 1;
+      setTerminalAttachRequest({
+        id: terminalAttachIdRef.current,
+        container,
       });
       openWindow("terminal");
     },
@@ -746,9 +728,7 @@ function DesktopShellInner() {
             animationsEnabled={appearance.animationsEnabled}
             onViewLogs={(target) => setLogsTarget(target)}
             onOpenTerminal={({ containerName }) =>
-              requestTerminalCommand(
-                `docker exec ${containerName} /bin/sh -c "pwd && ls"`,
-              )
+              openContainerTerminal(containerName)
             }
             onOpenSettings={(target) => {
               setAppSettingsTarget(target);
@@ -898,8 +878,8 @@ function DesktopShellInner() {
               setAppSettingsTarget(null);
             }}
             onMinimize={() => minimizeWindow("app-settings")}
-            defaultWidth={920}
-            defaultHeight={700}
+            defaultWidth={appSettingsTarget.unmanaged ? 560 : 920}
+            defaultHeight={appSettingsTarget.unmanaged ? 460 : 700}
             zIndex={getWindowZ("app-settings")}
             dockPosition={appearance.dockPosition}
             onFocus={() => setFocusedWindow("app-settings")}
@@ -907,23 +887,37 @@ function DesktopShellInner() {
             isMinimized={minimizedWindows.includes("app-settings")}
             animationsEnabled={appearance.animationsEnabled}
           >
-            <AppConfiguratorPanel
-              context="installed_edit"
-              target={appSettingsTarget}
-              actions={{ saveAppSettings: shellStoreActions.saveAppSettings }}
-              onClose={() => {
-                closeWindow("app-settings");
-                setAppSettingsTarget(null);
-              }}
-            />
+            {appSettingsTarget.unmanaged ? (
+              <ContainerSettingsPanel
+                key={appSettingsTarget.containerName}
+                target={appSettingsTarget}
+                onClose={() => {
+                  closeWindow("app-settings");
+                  setAppSettingsTarget(null);
+                }}
+              />
+            ) : (
+              <AppConfiguratorPanel
+                context="installed_edit"
+                target={appSettingsTarget}
+                actions={{ saveAppSettings: shellStoreActions.saveAppSettings }}
+                onClose={() => {
+                  closeWindow("app-settings");
+                  setAppSettingsTarget(null);
+                }}
+              />
+            )}
           </Window>
         )}
 
         {openWindows.includes("terminal") && (
           <Window
-            title={terminalMode === "logs" ? "Container Logs" : "Terminal"}
+            title="Terminal"
             icon={<TerminalSquare className="size-4 text-emerald-400" />}
-            onClose={() => closeWindow("terminal")}
+            onClose={() => {
+              closeWindow("terminal");
+              setTerminalAttachRequest(null);
+            }}
             onMinimize={() => minimizeWindow("terminal")}
             defaultWidth={980}
             defaultHeight={620}
@@ -934,10 +928,7 @@ function DesktopShellInner() {
             isMinimized={minimizedWindows.includes("terminal")}
             animationsEnabled={appearance.animationsEnabled}
           >
-            <Terminal
-              commandRequest={terminalCommandRequest}
-              readOnly={terminalMode === "logs"}
-            />
+            <Terminal attachRequest={terminalAttachRequest} />
           </Window>
         )}
 

@@ -1165,6 +1165,22 @@ server {
         return 403 '{"error":"This action is not available in demo mode."}';
     }
 
+    # The Terminal window's shell runs over a WebSocket. Everything else
+    # drops the Connection header to keep upstream connections alive, which
+    # would strip the upgrade, so this path forwards it. \$http_host keeps
+    # the port: the server checks it against the page's Origin.
+    location = /api/terminal {
+        proxy_pass http://homeio_backend;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$http_host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_buffering off;
+    }
+
     location / {
         proxy_pass http://homeio_backend;
         proxy_http_version 1.1;
