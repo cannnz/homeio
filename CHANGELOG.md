@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [Unreleased]
+## [1.10.2] - 2026-10-12
 
 ### Added
 
@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
-- **The terminal WebSocket could never open a shell.** It loaded node-pty through a default import the package does not have, so every session failed with `Cannot read properties of undefined (reading 'spawn')`.
+- **The terminal WebSocket could never open a shell.** It loaded node-pty through a default import the package does not have, so every session failed with `Cannot read properties of undefined (reading 'spawn')`. On script installs, nginx also dropped the WebSocket upgrade on its way to Homeio; `/api/terminal` now has its own nginx location that passes it through. The new nginx configuration is written by `update.sh`, so an in-app update applies it on the update after this one; run `curl -fsSL https://raw.githubusercontent.com/doctor-io/homeio/main/scripts/update.sh | sudo bash` to apply it at once.
 
 ### Security
 
