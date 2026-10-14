@@ -51,7 +51,7 @@
 **Severity:** P0  
 **Files:** `app/api/v1/system/stream/route.ts:12`, `app/api/v1/docker/stats/stream/route.ts:23`, `app/api/v1/store/operations/[operationId]/stream/route.ts:45`
 
-None of these three routes call `requireApiSession()` before constructing `ReadableStream`. The AGENTS.md hard rule ("SSE streams must authenticate before constructing ReadableStream") is violated, and the architecture boundary test (`modules/__tests__/architecture-boundaries.test.ts`) does not guard it.
+None of these three routes call `requireApiSession()` before constructing `ReadableStream`. The conventions.md hard rule ("SSE streams must authenticate before constructing ReadableStream") is violated, and the architecture boundary test (`modules/__tests__/architecture-boundaries.test.ts`) does not guard it.
 
 **Reproduction:** `curl http://<pi-ip>:12026/api/v1/system/stream` from any LAN device — receives live CPU, memory, temperature, network, and storage metrics with no credentials.
 
