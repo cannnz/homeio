@@ -5,6 +5,13 @@
 **Working directory:** `/Users/ahmedtabib/Code/home-server`
 **Git branch:** `feature/v1.6`
 
+> **Historical snapshot.** This audit describes the codebase as it stood on
+> 2026-05-01 at v1.6.1. Much of it is still useful context, but its gap list is
+> a snapshot, not current state: the test suite it describes as absent now holds
+> 220 test files and 1016 tests, the release line has moved to 1.10.x, and the
+> license changed from MIT to the AGPL-3.0 at 1.10.0. Verify anything
+> surprising against the current code before acting on it.
+
 ---
 
 ## 1. Project Overview
