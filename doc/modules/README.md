@@ -15,4 +15,4 @@ Homeio uses vertical feature modules for client UI and matching server modules f
 | [system.md](./system.md) | Metrics, updates, backups, power, disks, widgets |
 | [tasks.md](./tasks.md) | Scheduled tasks and execution history |
 
-Cross-cutting settings UI lives in `modules/settings/` and is documented in [../contributing.md](../contributing.md) and [../AGENTS.md](../AGENTS.md).
+Cross-cutting settings UI lives in `modules/settings/` and is documented in [../contributing.md](../contributing.md) and [../conventions.md](../conventions.md).

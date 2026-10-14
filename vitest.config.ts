@@ -10,6 +10,8 @@ export default defineConfig({
     exclude: ["node_modules", ".next"],
     restoreMocks: true,
     clearMocks: true,
+    // Coverage instrumentation roughly doubles the heavy desktop renders (#64).
+    testTimeout: 15000,
     coverage: {
       provider: "v8",
       reporter: ["lcov", "text-summary"],

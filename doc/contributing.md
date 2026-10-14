@@ -88,7 +88,7 @@ Use `npm run db:init` for local initialization with care; it drops Drizzle migra
 
 ## Add A Feature Module
 
-Read [AGENTS.md](./AGENTS.md) and [conventions.md](./conventions.md). In short:
+Read [conventions.md](./conventions.md). In short:
 
 1. Put client UI in `modules/<feature>/`.
 2. Put server code in `lib/server/modules/<feature>/`.
