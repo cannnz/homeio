@@ -2,8 +2,8 @@
 
 This document outlines what's shipping now and what's planned for future releases. It's a living document — priorities shift based on community feedback. If something here matters to you, open an issue or leave a 👍 on the relevant discussion.
 
-**Current stable release:** [v1.4.x](https://github.com/doctor-io/homeio/releases)  
-**In active development:** v1.7
+**Current stable release:** [v1.10.2](https://github.com/doctor-io/homeio/releases) (2026-10-12)  
+**In active development:** v2.0 — the plan for that line lives in the [roadmap on the `v2.0` branch](https://github.com/doctor-io/homeio/blob/v2.0/ROADMAP.md)
 
 ---
 
