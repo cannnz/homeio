@@ -70,10 +70,10 @@ Important rule:
 
 Files:
 
-- [lock-screen.tsx](/Users/ahmedtabib/Code/home-server/modules/shell/components/lock-screen.tsx)
-- [login-form.tsx](/Users/ahmedtabib/Code/home-server/components/auth/login-form.tsx)
-- [register-form.tsx](/Users/ahmedtabib/Code/home-server/components/auth/register-form.tsx)
-- [full-screen-shell.tsx](/Users/ahmedtabib/Code/home-server/modules/shell/components/full-screen-shell.tsx)
+- [lock-screen.tsx](../modules/shell/components/lock-screen.tsx)
+- [login-form.tsx](../components/auth/login-form.tsx)
+- [register-form.tsx](../components/auth/register-form.tsx)
+- [full-screen-shell.tsx](../modules/shell/components/full-screen-shell.tsx)
 
 Current decisions:
 
@@ -95,7 +95,7 @@ Specific lock screen decisions:
 
 File:
 
-- [dock.tsx](/Users/ahmedtabib/Code/home-server/modules/shell/components/dock.tsx)
+- [dock.tsx](../modules/shell/components/dock.tsx)
 
 Current direction:
 
