@@ -6,6 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.10.3] - 2026-10-14
+
+### Fixed
+
+- **Contributor tooling (thanks @cannnz).** The pre-commit hook ran the tests in watch mode and never returned in a terminal; it now runs them once (#62). `npm run test:coverage` timed out on the heavy desktop tests; tests now get 15 seconds (#64). Dead `AGENTS.md` links and stale versions, paths and testing notes in the docs are fixed (#61, #63).
+
+### Security
+
+- **Dependency updates (#60):** `compression` 1.8.2 (CVE-2026-87776), `next` 16.4.0, `sharp` 0.35.5 and others.
+
+---
+
 ## [1.10.2] - 2026-10-12
 
 ### Added
