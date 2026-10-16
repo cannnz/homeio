@@ -13,6 +13,10 @@ A self-hosted server manager with a desktop-style UI. Alternative to CasaOS, Umb
   <a href="https://github.com/sponsors/doctor-io">
     <img src="https://img.shields.io/github/sponsors/doctor-io?style=for-the-badge" alt="GitHub Sponsors" />
   </a>
+  &nbsp;·&nbsp;
+  <a href="https://www.opensourcealternatives.to">
+    <img src="https://www.opensourcealternatives.to/badge-osa.svg" alt="Listed on Open Source Alternatives" />
+  </a>
 </p>
 
 ## Screenshots
