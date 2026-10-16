@@ -1,6 +1,6 @@
 # Homeio Documentation
 
-Homeio is a self-hosted home server dashboard with a desktop-style Next.js UI for managing Docker Compose apps, files, terminal access, system metrics, scheduled tasks, notifications, storage, Google Drive, disk management, and network controls. These docs are written for maintainers and AI coding agents; factual source of truth is `PROJECT_AUDIT.md` plus the current code.
+Homeio is a self-hosted home server dashboard with a desktop-style Next.js UI for managing Docker Compose apps, files, terminal access, system metrics, scheduled tasks, notifications, storage, Google Drive, disk management, and network controls. These docs are written for maintainers and AI coding agents; the current code is the source of truth, and `PROJECT_AUDIT.md` is a historical audit of v1.6.1.
 
 ## Docs Index
 
@@ -31,6 +31,6 @@ Homeio is a self-hosted home server dashboard with a desktop-style Next.js UI fo
 
 ## Source Of Truth
 
-- Use `PROJECT_AUDIT.md` for audit findings and architectural context.
+- Use `PROJECT_AUDIT.md` for the 2026-05-01 audit of v1.6.1 — historical findings and architectural context, not current state.
 - Use current code for exact route lists, schemas, functions, tests, and implementation details.
 - If docs and code disagree, verify in code and update docs.

@@ -4,7 +4,7 @@
 
 Vitest is configured in `vitest.config.ts` with Node as the default environment, V8 coverage, and co-located test discovery for `**/*.test.ts` and `**/*.test.tsx`. `test/setup.ts` mocks `server-only`, `EventSource`, and `window.matchMedia`.
 
-`PROJECT_AUDIT.md` reports that no real tests were found; that statement is stale. The suite now holds 220 test files and 1016 tests covering route handlers, server modules, the desktop shell and components, co-located in `__tests__/` directories, and `npm run test` passes on `main`. `npm run test:coverage` adds the V8 coverage report; note that two desktop tests (`file-manager-sharing-actions.test.tsx`, `settings.test.tsx`) currently exceed their 5s timeout under coverage instrumentation while passing in a plain `npm run test`.
+`PROJECT_AUDIT.md` reports that no real tests were found; that statement is stale. The suite now holds 220 test files and 1016 tests covering route handlers, server modules, the desktop shell and components, co-located in `__tests__/` directories, and both `npm run test` and `npm run test:coverage` pass on `main`. Coverage writes `lcov` plus a text summary to `./coverage`; it is reported, not gated. V8 instrumentation roughly doubles the runtime of the heaviest desktop renders, so `vitest.config.ts` raises `testTimeout` above the Vitest default — change the timeout there if a slow test ever needs more room.
 
 ## Commands
 
