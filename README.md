@@ -11,7 +11,7 @@ A self-hosted server manager with a desktop-style UI. Alternative to CasaOS, Umb
   <code>homeio</code> / <code>homeio26</code>
   &nbsp;·&nbsp;
   <a href="https://github.com/sponsors/doctor-io">
-    <img src="https://img.shields.io/github/sponsors/doctor-io?style=for-the-badge" alt="GitHub Sponsors" />
+    <img src="https://img.shields.io/badge/Sponsor-doctor--io-ea4aaa?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="GitHub Sponsors" />
   </a>
   &nbsp;·&nbsp;
   <a href="https://www.opensourcealternatives.to">
